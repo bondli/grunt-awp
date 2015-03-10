@@ -38,21 +38,45 @@ module.exports = function(grunt) {
           awpConfig: appConfig.awpConfig,
           env: 'daily'
         },
-        files: { 'htmls' : './htmls-dist/' + appConfig.publishFiles }
+        files: [{
+          src: './htmls-dist/*.html',
+          filter: function(filepath) {
+            if(appConfig.publishFiles != '*.html'){
+              return 'htmls-dist/' + appConfig.publishFiles == filepath;
+            }
+            return filepath;
+          }
+        }]
       },
       prepub: {
         options: {
           awpConfig: appConfig.awpConfig,
           env: 'prepub'
         },
-        files: { 'htmls' : './htmls-dist/' + appConfig.publishFiles }
+        files: [{
+          src: './htmls-dist/*.html',
+          filter: function(filepath) {
+            if(appConfig.publishFiles != '*.html'){
+              return 'htmls-dist/' + appConfig.publishFiles == filepath;
+            }
+            return filepath;
+          }
+        }]
       },
       online: {
         options: {
           awpConfig: appConfig.awpConfig,
           env: 'online'
         },
-        files: { 'htmls' : './htmls-dist/' + appConfig.publishFiles }
+        files: [{
+          src: './htmls-dist/*.html',
+          filter: function(filepath) {
+            if(appConfig.publishFiles != '*.html'){
+              return 'htmls-dist/' + appConfig.publishFiles == filepath;
+            }
+            return filepath;
+          }
+        }]
       }
     }
 

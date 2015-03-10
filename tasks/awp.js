@@ -20,7 +20,7 @@ var warn = clc.yellow;
 var notice = clc.blue;
 
 var fstools = require('fs-tools');
-var rp = require('request-promise');
+var request = require('request');
 var Q = require('q');
 var crypto = require('crypto');
 var moment = require('moment');
@@ -45,12 +45,10 @@ module.exports = function(grunt) {
   // creation: http://gruntjs.com/creating-tasks
 
   grunt.registerMultiTask('awp', 'publish htmls to awp', function() {
+
+    var checkDone = this.async();
     
-    // Merge task-specific and/or target-specific options with these defaults.
-    var options = this.options({
-      punctuation: '.',
-      separator: ', '
-    });
+    var options = this.options();
 
     //console.log(JSON.stringify(options), JSON.stringify(this.files));
     //return;
@@ -63,7 +61,7 @@ module.exports = function(grunt) {
 
     //检查是否设置了ID和目录
     if (!awpConfig.dWebappId || !awpConfig.oWebappId || !awpConfig.oWebappDir) {
-      console.log(error('请先在gruntfile配置过项目的对应的awp应用id和目录'));
+      console.log(error('请先在gruntfile配置项目的对应的awp应用id和目录'));
       process.exit(0);
     }
     
@@ -100,7 +98,8 @@ module.exports = function(grunt) {
 
     //检查CDN资源是否已经发布
     if(pubConfig.env == 'online') {
-      checkAssetsPublished(function(){
+      var checkPromise = checkAssetsPublished();
+      checkPromise.then(function(){
         getPublishFile(pubConfig.files);
       });
     }
@@ -115,70 +114,14 @@ module.exports = function(grunt) {
      */
     function getPublishFile(selectedFile) {
         console.log('你需要发布文件如下：');
-        var isSingleFile = selectedFile.indexOf('*') == -1;
-        if(isSingleFile){
-            var files = [];
-            files.push(selectedFile);
-            console.log('  [1]' + selectedFile);
-            prepareBatchPubFiles(awpConfig, pubConfig, files);
-        }
-        else
-        {
-            var pubFilesPromise = filterPubFiles(process.cwd());
-            pubFilesPromise.then(function(files) {
-              files.forEach(function(file, idx) {
-                console.log('  [' + (idx + 1) + ']' + file);
-              });
-
-              prepareBatchPubFiles(awpConfig, pubConfig, files);
-            });
-        }
-
-    }
-
-
-    /**
-     * 过滤当前目录下可发布文件
-     * @param dirName {String}
-     * @returns {Promise.promise|*}
-     * @constructor
-     */
-    function filterPubFiles(dirName) {
-
-      "use strict";
-
-      var filterRegs = [/node_modules/, /\.idea/, /\.git/],
-          files = [],
-          defered = Q.defer();
-
-      fstools.walk(dirName, "\.htm(l)?$", function(filePath, stats, callback) {
-
-          var needFilter = false;
-          filterRegs.forEach(function(regexp) {
-              if (regexp.test(filePath)) {
-                  needFilter = true;
-                  return false;
-              }
-          });
-
-          if (!needFilter) {
-              filePath = path.relative(process.cwd(), filePath);
-              files.push(filePath);
-          }
-
-          callback();
-
-      }, function(err) {
-
-          if (err) {
-              defered.reject(err);
-          } else {
-              defered.resolve(files);
-          }
-
-      });
-
-      return defered.promise;
+        
+        var files = [];
+        selectedFile.forEach(function(file, idx) {
+            console.log('  [' + (idx + 1) + ']' + file);
+            files.push(file);
+        });
+        
+        prepareBatchPubFiles(awpConfig, pubConfig, files);
 
     }
 
@@ -186,23 +129,27 @@ module.exports = function(grunt) {
      * [checkAssetsPublished 判断当前assets是否发布]
      * @return 
      */
-    function checkAssetsPublished(callback) {
+    function checkAssetsPublished() {
+      var defered = Q.defer();
       var path = 'http://g.tb'+''+'cdn.cn/'+ awpConfig.group +'/'+ awpConfig.appName + '/' + awpConfig.version + '/';
       console.log('正在验证cdn上是否发布了该版本的assets：'+ path);
-      rp(path).then(function(res) {
+
+      request(path, function(error, res, body) {
 
           // 403 Forbidden
           if(res.statusCode == '403') {
               console.log(success('cdn上存在该版本的assets，验证通过！'));
-              callback & callback();
+              defered.resolve();
+              checkDone();
           } else if (res.statusCode == '404') {
+              defered.reject(err);
               console.log(error('cdn上不存在该版本的assets，验证失败！请先去发布该项目的css/js并保证cdn地址生效，再发布awp!'));
               process.exit(0);
           }
         
-      }).catch(function(e) {
-          console.log("Got error: " + e.message);
       });
+
+      return defered.promise;
 
     }
 
@@ -278,8 +225,6 @@ module.exports = function(grunt) {
 
         awpConfig.group = awpConfig.group || 'o2o';
 
-        console.log('您将要发布以下文件：');
-
         var onlinePath,
             isPathInvalid;
 
@@ -288,8 +233,11 @@ module.exports = function(grunt) {
             process.exit(0);
         }
 
+        console.log('您将要发布以下文件：');
+
         filePaths.forEach(function(filePath, idx) {
-            var fileName = filePath[0].replace('./htmls-dist/', '');
+            var fileName = filePath.replace('./htmls-dist/', '');
+
             // 映射到的发布地址
             onlinePath = concatPubPath(pubConfig.env, fileName);
 
@@ -297,14 +245,14 @@ module.exports = function(grunt) {
             isPathInvalid = checkFileValid(onlinePath);
 
             // 打印确认
-            console.log(isPathInvalid ? success(filePath[0]) : warn(filePath[0]));
+            console.log(isPathInvalid ? success(filePath) : warn(filePath));
             console.log(isPathInvalid ? success('    -> ' + clc.underline(onlinePath)) : warn('    -> ' + clc.underline(onlinePath)));
 
         });
 
         // 开始全部发布
         filePaths.forEach(function(filePath, i) {
-            batchPubFiles(awpConfig, pubConfig, filePath[0]);
+            batchPubFiles(awpConfig, pubConfig, filePath);
         });
 
     }
@@ -388,17 +336,13 @@ module.exports = function(grunt) {
       // console.log(fileParam);
 
       // 向 awp post 请求
-      rp({
-          method: 'post',
+      request.post({
           headers: headers,
-          uri: baseUri,
+          url: baseUri,
           form: fileParam,
           encoding: 'utf8',
-          json: true,
-          resolveWithFullResponse: true
-      }).then(function(response) {
-
-          var ret = response;
+          json: true
+      }, function(err, response, ret) {
 
           if (err) {
 
@@ -424,10 +368,7 @@ module.exports = function(grunt) {
               }
 
           }
-          //callback && callback();
-      }).catch(function(err){
-          console.log('亲，抱歉发布失败了,请检查下您的网络连接！');
-          console.error(err);
+
       });
 
     }
