@@ -353,10 +353,11 @@ module.exports = function(grunt) {
               console.error(err);
 
           } else if (!ret.success) {
-              console.log(ret);
+            
               // 发布失败
               console.log(error('>> 发布失败 <%s>'), filePath);
               console.log(error(' | %s'), ret.msg.replace(/\n/igm, ''));
+              process.exit(0);
 
           } else {
 
