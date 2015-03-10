@@ -4,9 +4,17 @@
   "version": "0.1.0",
   "homepage": "https://github.com/bondli/grunt-awp",
   "author": {
-    "name": "pixi",
-    "email": "hongbang.lhb@alibaba-inc.com"
+    "name": "bondli",
+    "email": "250934756@qq.com"
   },
+  "files": [
+    "tasks",
+    "test",
+    "Gruntfile.js",
+    "LICENSE-MIT",
+    "package.json",
+    "README.md"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/bondli/grunt-awp.git"

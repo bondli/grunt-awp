@@ -138,13 +138,16 @@ module.exports = function(grunt) {
 
           // 403 Forbidden
           if(res.statusCode == '403') {
+
               console.log(success('cdn上存在该版本的assets，验证通过！'));
               defered.resolve();
-              checkDone();
+
           } else if (res.statusCode == '404') {
-              defered.reject(err);
+
+              defered.reject();
               console.log(error('cdn上不存在该版本的assets，验证失败！请先去发布该项目的css/js并保证cdn地址生效，再发布awp!'));
               process.exit(0);
+              
           }
         
       });
