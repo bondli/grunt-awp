@@ -12,8 +12,7 @@ var fs = require('fs');
 var path = require('path');
 var http = require('http');
 
-var inquirer = require('inquirer');
-var clc = require('cli-color'); // required by inquirer
+var clc = require('cli-color');
 var success = clc.green;
 var error = clc.red.bold;
 var warn = clc.yellow;
