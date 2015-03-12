@@ -1,7 +1,7 @@
 {
   "name": "grunt-awp",
   "description": "publish htmls to awp",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "homepage": "https://github.com/bondli/grunt-awp",
   "author": {
     "name": "bondli",
@@ -39,7 +39,6 @@
     "commander": "^2.3.0",
     "crypto": "0.0.3",
     "fs-tools": "^0.2.11",
-    "inquirer": "^0.6.0",
     "moment": "^2.8.1",
     "q": "^1.0.1",
     "request": "^2.53.0",
